@@ -32,6 +32,8 @@ public class YamapViewManager extends ViewGroupManager<YamapView> {
     private static final int SET_ZOOM = 4;
     private static final int GET_CAMERA_POSITION = 5;
 
+    public YamapView yamapView;
+
     YamapViewManager() {
     }
 
@@ -118,6 +120,7 @@ public class YamapViewManager extends ViewGroupManager<YamapView> {
         YamapView view = new YamapView(context);
         MapKitFactory.getInstance().onStart();
         view.onStart();
+        this.yamapView = view;
         return view;
     }
 

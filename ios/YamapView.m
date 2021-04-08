@@ -25,6 +25,7 @@ RCT_EXPORT_MODULE()
 
 - (UIView *_Nullable)view {
     RNYMView* map = [[RNYMView alloc] init];
+    self.map = map;
     return map;
 }
 

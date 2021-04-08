@@ -73,6 +73,12 @@ export class YaMap extends React.Component<YaMapProps> {
     });
   }
 
+  public static search(query: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      NativeYamapModule.search(query, (response: any) => resolve(response), (err: string) => reject(new Error(err)));
+    });
+  }
+
   public findRoutes(points: Point[], vehicles: Vehicles[], callback: (event: RoutesFoundEvent<DrivingInfo | MasstransitInfo>) => void) {
     this._findRoutes(points, vehicles, callback);
   }
