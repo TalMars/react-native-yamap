@@ -6,7 +6,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.0.0'
+        classpath 'com.android.tools.build:gradle:4.0.1'
     }
 }
 
@@ -14,7 +14,6 @@ apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 28
-    buildToolsVersion "28.0.3"
 
     defaultConfig {
         minSdkVersion 16
@@ -29,21 +28,23 @@ android {
 
 repositories {
     mavenCentral()
+    google()
 }
 
 dependencies {
     implementation 'com.google.android.gms:play-services-location:17.0.0'
-    implementation ('com.yandex.android:mapkit:3.2.0') {
-        exclude group: "com.google.android.gms"
-    }
-    implementation ('com.yandex.android:transport:3.2.0') {
-        exclude group: "com.google.android.gms"
-    }
-    implementation ('com.yandex.android:directions:3.2.0') {
-        exclude group: "com.google.android.gms"
-    }
-    implementation ('com.yandex.android:search:3.2.0') {
-        exclude group: "com.google.android.gms"
-    }
+    implementation 'com.yandex.android:maps.mobile:4.0.0-full'
+//    implementation ('com.yandex.android:mapkit:3.5.0') {
+//        exclude group: "com.google.android.gms"
+//    }
+//    implementation ('com.yandex.android:transport:3.5.0') {
+//        exclude group: "com.google.android.gms"
+//    }
+//    implementation ('com.yandex.android:directions:3.5.0') {
+//        exclude group: "com.google.android.gms"
+//    }
+//    implementation ('com.yandex.android:search:3.5.0') {
+//        exclude group: "com.google.android.gms"
+//    }
     implementation 'com.facebook.react:react-native:+'
 }

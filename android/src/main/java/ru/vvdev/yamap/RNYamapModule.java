@@ -10,14 +10,19 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
+import com.yandex.mapkit.GeoObjectCollection;
 import com.yandex.mapkit.MapKitFactory;
+import com.yandex.mapkit.geometry.Geometry;
+import com.yandex.mapkit.search.Response;
+import com.yandex.mapkit.search.Session;
+import com.yandex.mapkit.search.SuggestOptions;
+import com.yandex.mapkit.search.SuggestSession;
+import com.yandex.mapkit.search.SuggestType;
 import com.yandex.mapkit.transport.TransportFactory;
 import com.yandex.mapkit.search.SearchFactory;
 import com.yandex.runtime.Error;
 import com.yandex.runtime.i18n.I18nManagerFactory;
 import com.yandex.runtime.i18n.LocaleListener;
-import com.yandex.runtime.i18n.LocaleResetListener;
-import com.yandex.runtime.i18n.LocaleUpdateListener;
 
 import java.util.HashMap;
 import java.util.List;
@@ -48,9 +53,13 @@ public class RNYamapModule extends ReactContextBaseJavaModule {
 
 
     private final double BOX_SIZE = 0.2;
-    private final SearchOptions SEARCH_OPTIONS =  new SearchOptions().setSearchTypes(
-            SearchType.GEO.value);
+    private final SuggestOptions SEARCH_OPTIONS = new SuggestOptions().setSuggestTypes(
+            SuggestType.GEO.value);
+//     |
+//    SuggestType.BIZ.value |
+//    SuggestType.TRANSIT.value
     private SearchManager searchManager;
+    private SuggestSession suggestSession;
     private YamapViewManager yamapViewManager;
 
     RNYamapModule(ReactApplicationContext context, YamapViewManager yamapViewManager) {
@@ -80,6 +89,7 @@ public class RNYamapModule extends ReactContextBaseJavaModule {
                 TransportFactory.initialize(reactContext);
                 MapKitFactory.getInstance().onStart();
                 searchManager = SearchFactory.getInstance().createSearchManager(SearchManagerType.COMBINED);
+                suggestSession = searchManager.createSuggestSession();
             }
         }));
     }
@@ -89,17 +99,19 @@ public class RNYamapModule extends ReactContextBaseJavaModule {
         runOnUiThread(new Thread(new Runnable() {
             @Override
             public void run() {
-                I18nManagerFactory.setLocale(locale, new LocaleUpdateListener() {
-                    @Override
-                    public void onLocaleUpdated() {
-                        successCb.invoke();
-                    }
-
-                    @Override
-                    public void onLocaleUpdateError(@NonNull Error error) {
-                        errorCb.invoke(error.toString());
-                    }
-                });
+                I18nManagerFactory.setLocale(locale);
+                successCb.invoke();
+//                , new LocaleUpdateListener() {
+//                    @Override
+//                    public void onLocaleUpdated() {
+//                        successCb.invoke();
+//                    }
+//
+//                    @Override
+//                    public void onLocaleUpdateError(@NonNull Error error) {
+//                        errorCb.invoke(error.toString());
+//                    }
+//                }
             }
         }));
     }
@@ -114,11 +126,6 @@ public class RNYamapModule extends ReactContextBaseJavaModule {
                     public void onLocaleReceived(@androidx.annotation.Nullable String s) {
                         successCb.invoke(s);
                     }
-
-                    @Override
-                    public void onLocaleError(@NonNull Error error) {
-                        errorCb.invoke(error.toString());
-                    }
                 });
             }
         }));
@@ -129,17 +136,8 @@ public class RNYamapModule extends ReactContextBaseJavaModule {
         runOnUiThread(new Thread(new Runnable() {
             @Override
             public void run() {
-                I18nManagerFactory.resetLocale(new LocaleResetListener() {
-                    @Override
-                    public void onLocaleReset() {
-                        successCb.invoke();
-                    }
-
-                    @Override
-                    public void onLocaleResetError(@NonNull Error error) {
-                        errorCb.invoke(error.toString());
-                    }
-                });
+                I18nManagerFactory.setLocale(reactContext.getResources().getConfiguration().locale.getLanguage());
+                successCb.invoke();
             }
         }));
     }
@@ -153,32 +151,33 @@ public class RNYamapModule extends ReactContextBaseJavaModule {
             }
         }));
     }
+
     // Yamap.search({query, point: {latitude, longitude}})
     public void requestSuggest(String query, final Callback successCb, final Callback errorCb) {
         Point CENTER_COORD = this.yamapViewManager.yamapView.getMap().getCameraPosition().getTarget();
         BoundingBox BOUNDING_BOX_LAYER = new BoundingBox(
                 new Point(CENTER_COORD.getLatitude() - BOX_SIZE, CENTER_COORD.getLongitude() - BOX_SIZE),
                 new Point(CENTER_COORD.getLatitude() + BOX_SIZE, CENTER_COORD.getLongitude() + BOX_SIZE));
-        searchManager.suggest(query, BOUNDING_BOX_LAYER, SEARCH_OPTIONS, new SearchManager.SuggestListener() {
+        suggestSession.suggest(query, BOUNDING_BOX_LAYER, SEARCH_OPTIONS, new SuggestSession.SuggestListener() {
 
             @Override
-            public void onSuggestResponse(List<SuggestItem> suggest) {
+            public void onResponse(@NonNull List<SuggestItem> suggest) {
                 WritableArray results = Arguments.createArray();
                 for (int i = 0; i < Math.min(50, suggest.size()); i++) {
                     WritableMap suggestMap = Arguments.createMap();
                     suggestMap.putString("displayName", suggest.get(i).getDisplayText());
-                    suggestMap.putString("fullName", suggest.get(i).getTitle().getText());
+                    suggestMap.putString("fullName", suggest.get(i).getSearchText());
                     results.pushMap(suggestMap);
                 }
-                // ReactContext reactContext = (ReactContext)getContext();
+
                 WritableMap suggestions = Arguments.createMap();
                 suggestions.putArray("suggestions", results);
                 successCb.invoke(suggestions);
             }
 
             @Override
-            public void onSuggestError(Error error) {
-                Log.d("SuggestError", "error");
+            public void onError(@NonNull Error error) {
+                Log.d("Suggest Error", "OOPS");
             }
         });
     }
